@@ -1,0 +1,1 @@
+# beegol-platform-test
