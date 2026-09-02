@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
-from app.core.config import settings
+from server.core.config import settings
 
 
 def validate_beegol_email(email: str) -> str:
@@ -13,7 +13,7 @@ def validate_beegol_email(email: str) -> str:
 
 
 class ProfileBase(BaseModel):
-    nome: str
+    name: str
     email: EmailStr
 
     @field_validator("email")
@@ -27,9 +27,10 @@ class ProfileCreate(ProfileBase):
 
 
 class ProfileUpdate(BaseModel):
-    nome: str | None = None
+    name: str | None = None
     email: EmailStr | None = None
     password: str | None = None
+    active: bool | None = None
 
     @field_validator("email")
     @classmethod
@@ -43,7 +44,8 @@ class ProfileOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    nome: str
+    name: str
     email: EmailStr
+    active: bool
     created_at: datetime
     updated_at: datetime

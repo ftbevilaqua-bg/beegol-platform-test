@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
-from app.core.dependencies import get_current_user
-from app.user import repository
-from app.user.models import User
-from app.user.schemas import ProfileCreate, ProfileOut, ProfileUpdate
+from server.core.database import get_db
+from server.core.dependencies import get_current_user
+from server.profile.schemas import ProfileCreate, ProfileOut, ProfileUpdate
+from server.users import repository
+from server.users.models import User
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -23,7 +23,7 @@ def create_user(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    if repository.get_user_by_email(db, payload.email):
+    if repository.get_user_by_email(db, payload.email, include_deleted=True):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="A user with this email already exists",
@@ -57,7 +57,7 @@ def update_user(
 ):
     user = _get_user_or_404(db, user_id)
     if payload.email is not None:
-        existing = repository.get_user_by_email(db, payload.email)
+        existing = repository.get_user_by_email(db, payload.email, include_deleted=True)
         if existing and existing.id != user.id:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,

@@ -1,11 +1,11 @@
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth.schemas import RefreshTokenRequest, ResetPasswordRequest
-from app.core.database import get_db
-from app.core.security import TokenType, decode_token
-from app.users import repository as profile_repository
-from app.users.models import User
+from server.auth.schemas import RefreshTokenRequest, ResetPasswordRequest
+from server.core.database import get_db
+from server.core.security import TokenType, decode_token
+from server.users import repository as profile_repository
+from server.users.models import User
 
 
 def get_user_from_refresh_token(

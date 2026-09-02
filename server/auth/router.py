@@ -3,19 +3,19 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.auth.dependencies import get_user_from_refresh_token, get_user_from_reset_token
-from app.auth.schemas import (
+from server.auth.dependencies import get_user_from_refresh_token, get_user_from_reset_token
+from server.auth.schemas import (
     AccessTokenResponse,
     ForgotPasswordRequest,
     LoginRequest,
     MessageResponse,
     TokenResponse,
 )
-from app.core.database import get_db
-from app.core.security import create_access_token, create_refresh_token, create_reset_token
-from app.profile.schemas import ProfileCreate, ProfileOut, ProfileUpdate
-from app.users import repository as profile_repository
-from app.users.models import User
+from server.core.database import get_db
+from server.core.security import create_access_token, create_refresh_token, create_reset_token
+from server.profile.schemas import ProfileCreate, ProfileOut, ProfileUpdate
+from server.users import repository as profile_repository
+from server.users.models import User
 
 logger = logging.getLogger(__name__)
 

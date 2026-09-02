@@ -1,22 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.users.models import User
-from app.customers import repository
-from app.customers.schemas import (
-    CustomerCreate,
-    CustomerOut,
-    CustomerUpdate,
-    SendMessageRequest,
-    SendMessageResponse,
-)
-from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from server.users.models import User
+from server.customers import repository
+from server.customers.schemas import CustomerCreate, CustomerOut, CustomerUpdate
+from server.core.database import get_db
+from server.core.dependencies import get_current_user
 
 router = APIRouter(prefix="/customers", tags=["customers"])
 
 
-def _get_customer_or_404(db: Session, customer_id: int):
+def get_customer_or_404(db: Session, customer_id: int):
     customer = repository.get_customer(db, customer_id)
     if not customer:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
@@ -51,7 +45,7 @@ def get_customer(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    return _get_customer_or_404(db, customer_id)
+    return get_customer_or_404(db, customer_id)
 
 
 @router.put("/{customer_id}", response_model=CustomerOut)
@@ -61,7 +55,7 @@ def update_customer(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    customer = _get_customer_or_404(db, customer_id)
+    customer = get_customer_or_404(db, customer_id)
     if payload.phone is not None:
         existing = repository.get_customer_by_phone(db, payload.phone, include_deleted=True)
         if existing and existing.id != customer.id:
@@ -78,16 +72,5 @@ def delete_customer(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    customer = _get_customer_or_404(db, customer_id)
+    customer = get_customer_or_404(db, customer_id)
     repository.delete_customer(db, customer)
-
-
-@router.post("/{customer_id}/send-message", response_model=SendMessageResponse)
-def send_message(
-    customer_id: int,
-    payload: SendMessageRequest,
-    db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
-):
-    customer = _get_customer_or_404(db, customer_id)
-    return repository.send_message(db, customer, payload.message)

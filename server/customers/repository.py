@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from app.customers.models import Customer, CustomerMessage
-from app.customers.schemas import CustomerCreate, CustomerUpdate
+from server.customers.models import Customer, CustomerMessage
+from server.customers.schemas import CustomerCreate, CustomerUpdate
 
 
 def list_customers(db: Session) -> list[Customer]:
@@ -48,6 +48,15 @@ def send_message(db: Session, customer: Customer, message: str) -> CustomerMessa
     db.commit()
     db.refresh(record)
     return record
+
+
+def list_messages(db: Session, customer_id: int) -> list[CustomerMessage]:
+    return (
+        db.query(CustomerMessage)
+        .filter(CustomerMessage.customer_id == customer_id, CustomerMessage.deleted_at.is_(None))
+        .order_by(CustomerMessage.sent_at)
+        .all()
+    )
 
 
 def delete_message(db: Session, message: CustomerMessage) -> None:

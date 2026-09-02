@@ -1,0 +1,8 @@
+[project]
+name = "beegol-platform-test"
+version = "0.1.0"
+description = ""
+readme = "README.md"
+
+[tool.vercel]
+entrypoint = "server.main:app"
