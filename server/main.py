@@ -1,4 +1,3 @@
-from uvicorn import run
 import logging
 
 from fastapi import FastAPI
@@ -33,10 +32,6 @@ app.include_router(customer_router)
 app.include_router(customer_messages_router)
 
 
-@app.get("/health_check", tags=["health"])
+@app.get("/", tags=["health"])
 def health_check():
     return {"status": "ok"}
-
-
-if __name__ == "__main__":
-    run("server.api:app", host="0.0.0.0", port=8000, reload=True)
