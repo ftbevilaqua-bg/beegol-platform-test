@@ -2,8 +2,13 @@ from collections.abc import AsyncGenerator
 from uuid import uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.pool import NullPool
 from server.core.config import dsn_async, settings
+
+
+class Base(DeclarativeBase):
+    pass
 
 connect_args = {
     "statement_cache_size": 0,

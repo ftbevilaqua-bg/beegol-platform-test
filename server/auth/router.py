@@ -1,7 +1,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.auth.dependencies import get_user_from_refresh_token, get_user_from_reset_token
 from server.auth.schemas import (
@@ -11,7 +11,7 @@ from server.auth.schemas import (
     MessageResponse,
     TokenResponse,
 )
-from server.core.database import get_db
+from server.core.database import get_session
 from server.core.security import create_access_token, create_refresh_token, create_reset_token
 from server.profile.schemas import ProfileCreate, ProfileOut, ProfileUpdate
 from server.users import repository as profile_repository
@@ -23,18 +23,18 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=ProfileOut, status_code=status.HTTP_201_CREATED)
-def register(payload: ProfileCreate, db: Session = Depends(get_db)):
-    if profile_repository.get_user_by_email(db, payload.email, include_deleted=True):
+async def register(payload: ProfileCreate, db: AsyncSession = Depends(get_session)):
+    if await profile_repository.get_user_by_email(db, payload.email, include_deleted=True):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="A profile with this email already exists",
         )
-    return profile_repository.create_user(db, payload)
+    return await profile_repository.create_user(db, payload)
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, db: Session = Depends(get_db)):
-    user = profile_repository.authenticate_user(db, payload.email, payload.password)
+async def login(payload: LoginRequest, db: AsyncSession = Depends(get_session)):
+    user = await profile_repository.authenticate_user(db, payload.email, payload.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -57,8 +57,8 @@ def refresh_token(user: User = Depends(get_user_from_refresh_token)):
 
 
 @router.post("/forgot-password", response_model=MessageResponse)
-def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    user = profile_repository.get_user_by_email(db, payload.email)
+async def forgot_password(payload: ForgotPasswordRequest, db: AsyncSession = Depends(get_session)):
+    user = await profile_repository.get_user_by_email(db, payload.email)
     if user:
         reset_token = create_reset_token(str(user.id))
         logger.info("Password reset token for %s: %s", user.email, reset_token)
@@ -69,10 +69,10 @@ def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db
 
 
 @router.post("/reset-password", response_model=MessageResponse)
-def reset_password(
+async def reset_password(
     resolved: tuple[User, str] = Depends(get_user_from_reset_token),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ):
     user, new_password = resolved
-    profile_repository.update_user(db, user, ProfileUpdate(password=new_password))
+    await profile_repository.update_user(db, user, ProfileUpdate(password=new_password))
     return MessageResponse(message="Password has been reset successfully.")

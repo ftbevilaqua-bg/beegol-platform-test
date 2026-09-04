@@ -1,64 +1,74 @@
 from datetime import datetime, timezone
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.customers.models import Customer, CustomerMessage
 from server.customers.schemas import CustomerCreate, CustomerUpdate
 
 
-def list_customers(db: Session) -> list[Customer]:
-    return db.query(Customer).filter(Customer.deleted_at.is_(None)).order_by(Customer.id).all()
+async def list_customers(db: AsyncSession) -> list[Customer]:
+    result = await db.execute(
+        select(Customer).where(Customer.deleted_at.is_(None)).order_by(Customer.id)
+    )
+    return list(result.scalars().all())
 
 
-def get_customer(db: Session, customer_id: int) -> Customer | None:
-    return db.query(Customer).filter(Customer.id == customer_id, Customer.deleted_at.is_(None)).first()
+async def get_customer(db: AsyncSession, customer_id: int) -> Customer | None:
+    result = await db.execute(
+        select(Customer).where(Customer.id == customer_id, Customer.deleted_at.is_(None))
+    )
+    return result.scalar_one_or_none()
 
 
-def get_customer_by_phone(db: Session, phone: str, *, include_deleted: bool = False) -> Customer | None:
-    query = db.query(Customer).filter(Customer.phone == phone)
+async def get_customer_by_phone(
+    db: AsyncSession, phone: str, *, include_deleted: bool = False
+) -> Customer | None:
+    query = select(Customer).where(Customer.phone == phone)
     if not include_deleted:
-        query = query.filter(Customer.deleted_at.is_(None))
-    return query.first()
+        query = query.where(Customer.deleted_at.is_(None))
+    result = await db.execute(query)
+    return result.scalar_one_or_none()
 
 
-def create_customer(db: Session, payload: CustomerCreate) -> Customer:
+async def create_customer(db: AsyncSession, payload: CustomerCreate) -> Customer:
     customer = Customer(**payload.model_dump())
     db.add(customer)
-    db.commit()
-    db.refresh(customer)
+    await db.commit()
+    await db.refresh(customer)
     return customer
 
 
-def update_customer(db: Session, customer: Customer, updates: CustomerUpdate) -> Customer:
+async def update_customer(db: AsyncSession, customer: Customer, updates: CustomerUpdate) -> Customer:
     for field, value in updates.model_dump(exclude_unset=True).items():
         setattr(customer, field, value)
-    db.commit()
-    db.refresh(customer)
+    await db.commit()
+    await db.refresh(customer)
     return customer
 
 
-def delete_customer(db: Session, customer: Customer) -> None:
+async def delete_customer(db: AsyncSession, customer: Customer) -> None:
     customer.deleted_at = datetime.now(timezone.utc)
-    db.commit()
+    await db.commit()
 
 
-def send_message(db: Session, customer: Customer, message: str) -> CustomerMessage:
+async def send_message(db: AsyncSession, customer: Customer, message: str) -> CustomerMessage:
     record = CustomerMessage(customer_id=customer.id, message=message)
     db.add(record)
-    db.commit()
-    db.refresh(record)
+    await db.commit()
+    await db.refresh(record)
     return record
 
 
-def list_messages(db: Session, customer_id: int) -> list[CustomerMessage]:
-    return (
-        db.query(CustomerMessage)
-        .filter(CustomerMessage.customer_id == customer_id, CustomerMessage.deleted_at.is_(None))
+async def list_messages(db: AsyncSession, customer_id: int) -> list[CustomerMessage]:
+    result = await db.execute(
+        select(CustomerMessage)
+        .where(CustomerMessage.customer_id == customer_id, CustomerMessage.deleted_at.is_(None))
         .order_by(CustomerMessage.sent_at)
-        .all()
     )
+    return list(result.scalars().all())
 
 
-def delete_message(db: Session, message: CustomerMessage) -> None:
+async def delete_message(db: AsyncSession, message: CustomerMessage) -> None:
     message.deleted_at = datetime.now(timezone.utc)
-    db.commit()
+    await db.commit()

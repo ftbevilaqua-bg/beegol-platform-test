@@ -1,16 +1,16 @@
 from fastapi import Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.auth.schemas import RefreshTokenRequest, ResetPasswordRequest
-from server.core.database import get_db
+from server.core.database import get_session
 from server.core.security import TokenType, decode_token
 from server.users import repository as profile_repository
 from server.users.models import User
 
 
-def get_user_from_refresh_token(
+async def get_user_from_refresh_token(
     payload: RefreshTokenRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> User:
     """Resolve and validate a refresh token, returning its owning user.
 
@@ -32,16 +32,16 @@ def get_user_from_refresh_token(
         raise invalid_token_exception
 
     user_id = decoded.get("sub")
-    user = profile_repository.get_user_by_id(db, int(user_id)) if user_id else None
+    user = await profile_repository.get_user_by_id(db, int(user_id)) if user_id else None
     if not user:
         raise invalid_token_exception
 
     return user
 
 
-def get_user_from_reset_token(
+async def get_user_from_reset_token(
     payload: ResetPasswordRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_session),
 ) -> tuple[User, str]:
     """Resolve and validate a password-reset token, returning the owning user
     alongside the new password from the same request body.
@@ -60,7 +60,7 @@ def get_user_from_reset_token(
         raise invalid_token_exception
 
     user_id = decoded.get("sub")
-    user = profile_repository.get_user_by_id(db, int(user_id)) if user_id else None
+    user = await profile_repository.get_user_by_id(db, int(user_id)) if user_id else None
     if not user:
         raise invalid_token_exception
 

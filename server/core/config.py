@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     database_url: str = "postgresql://beegol:beegol@localhost:5432/beegol"
+    db_ssl: bool = True
     secret_key: str = "change-this-secret-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30

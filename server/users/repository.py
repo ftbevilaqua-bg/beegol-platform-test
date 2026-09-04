@@ -1,28 +1,32 @@
 from datetime import datetime, timezone
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.core.security import hash_password, verify_password
 from server.profile.schemas import ProfileCreate, ProfileUpdate
 from server.users.models import User
 
 
-def get_user_by_email(db: Session, email: str, *, include_deleted: bool = False) -> User | None:
-    query = db.query(User).filter(User.email == email)
+async def get_user_by_email(db: AsyncSession, email: str, *, include_deleted: bool = False) -> User | None:
+    query = select(User).where(User.email == email)
     if not include_deleted:
-        query = query.filter(User.deleted_at.is_(None))
-    return query.first()
+        query = query.where(User.deleted_at.is_(None))
+    result = await db.execute(query)
+    return result.scalar_one_or_none()
 
 
-def get_user_by_id(db: Session, user_id: int) -> User | None:
-    return db.query(User).filter(User.id == user_id, User.deleted_at.is_(None)).first()
+async def get_user_by_id(db: AsyncSession, user_id: int) -> User | None:
+    result = await db.execute(select(User).where(User.id == user_id, User.deleted_at.is_(None)))
+    return result.scalar_one_or_none()
 
 
-def list_users(db: Session) -> list[User]:
-    return db.query(User).filter(User.deleted_at.is_(None)).order_by(User.id).all()
+async def list_users(db: AsyncSession) -> list[User]:
+    result = await db.execute(select(User).where(User.deleted_at.is_(None)).order_by(User.id))
+    return list(result.scalars().all())
 
 
-def create_user(db: Session, profile: ProfileCreate) -> User:
+async def create_user(db: AsyncSession, profile: ProfileCreate) -> User:
     user = User(
         name=profile.name,
         email=profile.email,
@@ -30,12 +34,12 @@ def create_user(db: Session, profile: ProfileCreate) -> User:
         active=False,
     )
     db.add(user)
-    db.commit()
-    db.refresh(user)
+    await db.commit()
+    await db.refresh(user)
     return user
 
 
-def update_user(db: Session, user: User, updates: ProfileUpdate) -> User:
+async def update_user(db: AsyncSession, user: User, updates: ProfileUpdate) -> User:
     if updates.name is not None:
         user.name = updates.name
     if updates.email is not None:
@@ -44,18 +48,18 @@ def update_user(db: Session, user: User, updates: ProfileUpdate) -> User:
         user.password_hash = hash_password(updates.password)
     if updates.active is not None:
         user.active = updates.active
-    db.commit()
-    db.refresh(user)
+    await db.commit()
+    await db.refresh(user)
     return user
 
 
-def delete_user(db: Session, user: User) -> None:
+async def delete_user(db: AsyncSession, user: User) -> None:
     user.deleted_at = datetime.now(timezone.utc)
-    db.commit()
+    await db.commit()
 
 
-def authenticate_user(db: Session, email: str, password: str) -> User | None:
-    user = get_user_by_email(db, email)
+async def authenticate_user(db: AsyncSession, email: str, password: str) -> User | None:
+    user = await get_user_by_email(db, email)
     if not user or not verify_password(password, user.password_hash):
         return None
     return user
