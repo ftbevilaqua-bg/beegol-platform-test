@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +8,9 @@ from server.profile.schemas import ProfileCreate, ProfileUpdate
 from server.users.models import User
 
 
-async def get_user_by_email(db: AsyncSession, email: str, *, include_deleted: bool = False) -> User | None:
+async def get_user_by_email(
+    db: AsyncSession, email: str, *, include_deleted: bool = False
+) -> User | None:
     query = select(User).where(User.email == email)
     if not include_deleted:
         query = query.where(User.deleted_at.is_(None))
@@ -54,7 +56,7 @@ async def update_user(db: AsyncSession, user: User, updates: ProfileUpdate) -> U
 
 
 async def delete_user(db: AsyncSession, user: User) -> None:
-    user.deleted_at = datetime.now(timezone.utc)
+    user.deleted_at = datetime.now(UTC)
     await db.commit()
 
 

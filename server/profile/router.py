@@ -3,9 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from server.core.database import get_session
 from server.core.dependencies import get_current_user
+from server.profile.schemas import ProfileOut, ProfileUpdate
 from server.users import repository
 from server.users.models import User
-from server.profile.schemas import ProfileCreate, ProfileOut, ProfileUpdate
 
 router = APIRouter(prefix="/auth/profile", tags=["profile"])
 

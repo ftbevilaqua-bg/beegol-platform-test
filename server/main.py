@@ -6,12 +6,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from server.auth.router import router as auth_router
-from server.profile.router import router as profile_router
-from server.users.router import router as users_router
+from server.core.config import settings
+from server.core.database import Base, SessionLocal, engine
 from server.customers.routers.customers import router as customer_router
 from server.customers.routers.messages import router as customer_messages_router
-from server.core.config import settings
-from server.core.database import SessionLocal, engine, Base
+from server.profile.router import router as profile_router
+from server.users.router import router as users_router
 
 logging.basicConfig(level=logging.INFO)
 
@@ -22,6 +22,7 @@ async def lifespan(_: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     yield
     await engine.dispose()
+
 
 app = FastAPI(title="Beegol Platform API", version="0.1.0", lifespan=lifespan)
 

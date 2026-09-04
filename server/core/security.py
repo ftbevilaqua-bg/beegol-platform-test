@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta, timezone
-from enum import Enum
+from datetime import UTC, datetime, timedelta
+from enum import StrEnum
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -9,7 +9,7 @@ from server.core.config import settings
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-class TokenType(str, Enum):
+class TokenType(StrEnum):
     ACCESS = "access"
     REFRESH = "refresh"
     RESET = "reset"
@@ -24,7 +24,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def _create_token(subject: str, token_type: TokenType, expires_delta: timedelta) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": subject,
         "type": token_type.value,

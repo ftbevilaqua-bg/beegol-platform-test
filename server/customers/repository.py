@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,7 +39,9 @@ async def create_customer(db: AsyncSession, payload: CustomerCreate) -> Customer
     return customer
 
 
-async def update_customer(db: AsyncSession, customer: Customer, updates: CustomerUpdate) -> Customer:
+async def update_customer(
+    db: AsyncSession, customer: Customer, updates: CustomerUpdate
+) -> Customer:
     for field, value in updates.model_dump(exclude_unset=True).items():
         setattr(customer, field, value)
     await db.commit()
@@ -48,7 +50,7 @@ async def update_customer(db: AsyncSession, customer: Customer, updates: Custome
 
 
 async def delete_customer(db: AsyncSession, customer: Customer) -> None:
-    customer.deleted_at = datetime.now(timezone.utc)
+    customer.deleted_at = datetime.now(UTC)
     await db.commit()
 
 
@@ -70,5 +72,5 @@ async def list_messages(db: AsyncSession, customer_id: int) -> list[CustomerMess
 
 
 async def delete_message(db: AsyncSession, message: CustomerMessage) -> None:
-    message.deleted_at = datetime.now(timezone.utc)
+    message.deleted_at = datetime.now(UTC)
     await db.commit()

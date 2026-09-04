@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from server.users.models import User
+from server.core.database import get_session
+from server.core.dependencies import get_current_user
 from server.customers import repository
 from server.customers.routers.customers import get_customer_or_404
 from server.customers.schemas import SendMessageRequest, SendMessageResponse
-from server.core.database import get_session
-from server.core.dependencies import get_current_user
+from server.users.models import User
 
 router = APIRouter(prefix="/customers/{customer_id}/message", tags=["customer-messages"])
 
