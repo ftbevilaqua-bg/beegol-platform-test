@@ -1,7 +1,9 @@
 .venv/
 __pycache__/
+.vercel
+.ruff_cache
+
 *.pyc
 *.db
 .env
-.vercel
 .env*
